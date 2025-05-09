@@ -25,20 +25,16 @@ def get_data_overview(df):
     }
 
 def classify_features(df, target_col=None):
-    """
-    Classify features into categorical and numerical
-    
-    Args:
-        df (pd.DataFrame): Input dataframe
-        target_col (str): Optional target column to exclude
-        
-    Returns:
-        tuple: (categorical_cols, numerical_cols)
-    """
+  
     categorical_cols = df.select_dtypes(include=['object', 'category', 'bool']).columns.tolist()
     numerical_cols = df.select_dtypes(include=['int64', 'float64']).columns.tolist()
-    
+
     if target_col and target_col in categorical_cols:
         categorical_cols.remove(target_col)
-        
+
+    print(f"🔸 Found {len(categorical_cols)} categorical features (excluding target '{target_col}'):")
+    print(categorical_cols)
+    print("\n🔹 Found {0} numerical features:".format(len(numerical_cols)))
+    print(numerical_cols)
+
     return categorical_cols, numerical_cols
