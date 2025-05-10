@@ -60,3 +60,7 @@ def get_monthly_test_result_counts(df, date_col='Date of Admission', target_col=
     )
 
     return grouped_data
+
+
+def compute_descriptive_statistics(df):
+    return df.describe(include='all')
