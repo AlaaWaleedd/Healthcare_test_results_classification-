@@ -22,17 +22,7 @@ def plot_missing_data(missing_data: pd.DataFrame):
 
 
 def plot_categorical_by_target(df, categorical_cols, target_col='Test Results'):
-    """
-    Plots grouped bar charts for categorical columns by target classes with custom colors.
-
-    Args:
-        df (pd.DataFrame): Input DataFrame.
-        categorical_cols (list): Categorical columns to plot.
-        target_col (str): Target class column for grouping.
-
-    Returns:
-        list: List of Plotly figure objects.
-    """
+  
     result_colors = {
         'Normal': '#a569bd',      
         'Inconclusive': '#85c1e9',
@@ -69,15 +59,7 @@ def plot_categorical_by_target(df, categorical_cols, target_col='Test Results'):
 
 
 def plot_monthly_test_result_trends(grouped_df):
-    """
-    Creates a line plot showing monthly test result trends.
 
-    Args:
-        grouped_df (pd.DataFrame): DataFrame with columns ['Month', 'Test Results', 'Count'].
-
-    Returns:
-        plotly.graph_objects.Figure: The resulting Plotly figure.
-    """
     fig = px.line(
         grouped_df,
         x='Month', 
@@ -102,16 +84,7 @@ def plot_monthly_test_result_trends(grouped_df):
 
 
 def plot_test_result_distribution(df, target_col='Test Results'):
-    """
-    Plots a histogram showing the distribution of test result classes.
 
-    Args:
-        df (pd.DataFrame): The input DataFrame.
-        target_col (str): The target column representing test results.
-
-    Returns:
-        plotly.graph_objects.Figure: The Plotly figure.
-    """
     category_order = ["Normal", "Abnormal", "Inconclusive"]
     fig = px.histogram(
         df,
@@ -135,17 +108,7 @@ def plot_test_result_distribution(df, target_col='Test Results'):
 
 
 def plot_correlation_matrix(df, features):
-    """
-    Plots and optionally saves a correlation matrix heatmap for selected numerical features.
-
-    Args:
-        df (pd.DataFrame): Input DataFrame.
-        features (list): List of numerical features to include in the correlation matrix.
-        save_path (str, optional): If provided, saves the plot as an SVG at this path.
-
-    Returns:
-        plotly.graph_objects.Figure: The Plotly figure object.
-    """
+   
     corr_matrix = df[features].corr()
 
     fig = px.imshow(

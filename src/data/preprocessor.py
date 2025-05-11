@@ -7,10 +7,15 @@ def analyze_missing_values(df):
         'Missing Values': missing_counts[missing_counts > 0],
         'Percentage (%)': missing_percentage[missing_counts > 0].round(2)
     })
-    missing_data = missing_data.sort_values('Percentage (%)', ascending=False)
-    print("Missing Values Analysis:")
-    print(missing_data)
+    
+    if missing_data.empty:
+        print("❌ No missing values found in the dataset.")
+    else:
+        print("Missing Values Analysis:")
+        print(missing_data)
+    
     return missing_data
+
 
 def get_numerical_features(df, exclude_cols=None):
     if exclude_cols is None:
@@ -37,17 +42,7 @@ def get_plotable_categorical_features(df, target_col=None, exclude_cols=None, ma
 
 
 def get_monthly_test_result_counts(df, date_col='Date of Admission', target_col='Test Results'):
-    """
-    Groups test results by year-month from the date column and returns counts.
-
-    Args:
-        df (pd.DataFrame): Input DataFrame.
-        date_col (str): Column containing admission dates.
-        target_col (str): Target classification column (e.g., 'Test Results').
-
-    Returns:
-        pd.DataFrame: Grouped counts by month and target class.
-    """
+   
     # Ensure date column is in datetime format
     df['Month'] = pd.to_datetime(df[date_col], errors='coerce').dt.strftime('%Y-%m')
 
@@ -64,3 +59,35 @@ def get_monthly_test_result_counts(df, date_col='Date of Admission', target_col=
 
 def compute_descriptive_statistics(df):
     return df.describe(include='all')
+
+
+# Update the function to also print the remaining columns
+def drop_irrelevant_columns(df):
+    columns_to_drop = ['ID', 'Name', 'Doctor', 'Hospital', 'Room Number','Billing Amount','Discharge Date', 'Date of Admission']
+    df = df.drop(columns=columns_to_drop, errors='ignore')
+    print("Remaining columns:", df.columns.tolist())
+    return df
+
+
+def handle_missing_values(df):
+    missing_summary = df.isnull().sum()
+    total_missing = missing_summary.sum()
+
+    if total_missing == 0:
+        print("❌ No missing values found.")
+    else:
+        print("⚠️ Missing values found. Filling them accordingly...")
+        for column in df.columns:
+            if df[column].isnull().any():
+                if df[column].dtype == 'object':
+                    # Fill missing categorical values with mode
+                    fill_value = df[column].mode()[0]
+                    df[column].fillna(fill_value, inplace=True)
+                    print(f"Filled missing values in '{column}' with mode: '{fill_value}'")
+                else:
+                    # Fill missing numerical values with median
+                    fill_value = df[column].median()
+                    df[column].fillna(fill_value, inplace=True)
+                    print(f"Filled missing values in '{column}' with median: {fill_value}")
+    return df
+
