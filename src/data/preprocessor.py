@@ -1,4 +1,5 @@
 import pandas as pd
+from sklearn.preprocessing import OrdinalEncoder
 
 def analyze_missing_values(df):
     missing_counts = df.isnull().sum()
@@ -91,3 +92,68 @@ def handle_missing_values(df):
                     print(f"Filled missing values in '{column}' with median: {fill_value}")
     return df
 
+
+def encode_categorical_variables(df, verbose=True):
+    # Set display options
+    pd.set_option('display.max_columns', None)
+    pd.set_option('display.width', 1000)
+    
+    # Initial report
+    if verbose:
+        print("="*80)
+        print("CATEGORICAL VARIABLE ENCODING VERIFICATION REPORT".center(80))
+        print("="*80)
+        print(f"\nOriginal DataFrame Shape: {df.shape}")
+        print("\nCategorical Columns to encode:")
+        print([col for col in df.columns if df[col].dtype == 'object'])
+        
+    # -----------------------------------------------------------------
+    # 1. Admission Type (ordinal encoding)
+    # -----------------------------------------------------------------
+    admission_order = ['Elective', 'Urgent', 'Emergency']
+    df['Admission Type'] = df['Admission Type'].map({val:i for i,val in enumerate(admission_order)})
+    
+    if verbose:
+        print("\n" + "="*80)
+        print("ADMISSION TYPE ENCODING VERIFICATION".center(80))
+        print("="*80)
+        print("\nMapping Applied:")
+        print(pd.DataFrame({'Category': admission_order, 'Encoded Value': range(3)}))
+        print("\nValue Distribution After Encoding:")
+        print(df['Admission Type'].value_counts().sort_index())
+    
+    # -----------------------------------------------------------------
+    # 2. One-Hot Encoding
+    # -----------------------------------------------------------------
+    nominal_cols = ['Gender', 'Blood Type', 'Medical Condition', 
+                   'Insurance Provider', 'Medication']
+    
+    df_encoded = pd.get_dummies(df, columns=nominal_cols, drop_first=True)
+    
+    if verbose:
+        print("\n" + "="*80)
+        print("ONE-HOT ENCODING VERIFICATION".center(80))
+        print("="*80)
+        print(f"\nNew Shape: {df_encoded.shape}")
+        print("\nDummy Columns Created:")
+        dummy_report = []
+        for col in nominal_cols:
+            n_dummies = sum(1 for c in df_encoded.columns if c.startswith(col+'_'))
+            dummy_report.append([col, df[col].nunique(), n_dummies])
+        print(pd.DataFrame(dummy_report, 
+                         columns=['Feature', 'Original Categories', 'Dummy Columns']))
+    
+    # -----------------------------------------------------------------
+    # 3. Target Encoding Verification
+    # -----------------------------------------------------------------
+    if 'Test Results' in df_encoded.columns:
+        if verbose:
+            print("\n" + "="*80)
+            print("TARGET VARIABLE DISTRIBUTION".center(80))
+            print("="*80)
+            print("\nTest Results Value Counts:")
+            print(df_encoded['Test Results'].value_counts())
+            print("\nClass Balance:")
+            print((df_encoded['Test Results'].value_counts(normalize=True)*100).round(1))
+    
+    return df_encoded
