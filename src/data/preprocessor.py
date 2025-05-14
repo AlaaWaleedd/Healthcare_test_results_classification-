@@ -1,6 +1,9 @@
 import pandas as pd
-from sklearn.preprocessing import OrdinalEncoder
+
+from sklearn.preprocessing import StandardScaler
+
 from scipy import stats
+import numpy as np
 
 def analyze_missing_values(df):
     missing_counts = df.isnull().sum()
@@ -93,6 +96,73 @@ def compute_descriptive_statistics(df):
     return df.describe(include='all')
 
 
+def encode_students_dataset(df: pd.DataFrame, max_unique_threshold=50) -> pd.DataFrame:
+    df = df.copy()
+
+    # Label encode binary column: Gender
+    if 'Gender' in df.columns:
+        df['Gender'] = df['Gender'].map({'Male': 0, 'Female': 1})
+
+    # Label encode target: Test Results
+    if 'Test Results' in df.columns:
+        df['Test Results'] = df['Test Results'].map({
+            'Normal': 0, 'Abnormal': 1, 'Inconclusive': 2
+        })
+
+    # Detect object (categorical) columns, excluding already handled and ID-like fields
+    categorical_cols = df.select_dtypes(include='object').columns.tolist()
+    categorical_cols = [col for col in categorical_cols if col not in ['Test Results']]
+
+    # Separate columns with reasonable cardinality
+    low_cardinality_cols = [col for col in categorical_cols if df[col].nunique() <= max_unique_threshold]
+    high_cardinality_cols = [col for col in categorical_cols if df[col].nunique() > max_unique_threshold]
+
+    if high_cardinality_cols:
+        print("⚠️ Skipping high-cardinality columns from encoding:", high_cardinality_cols)
+
+    # One-hot encode safe columns
+    df = pd.get_dummies(df, columns=low_cardinality_cols, drop_first=True)
+
+    return df
+
+
+
+def scale_features(df: pd.DataFrame, target_column: str = 'Test Results') -> pd.DataFrame:
+    """
+    Scales only numeric features using StandardScaler, excluding the target and non-numeric columns.
+
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        DataFrame with numeric and non-numeric features
+    target_column : str
+        Name of the target column (excluded from scaling)
+
+    Returns:
+    --------
+    pd.DataFrame
+        Scaled DataFrame with target intact, and non-numeric columns untouched
+    """
+    df = df.copy()
+
+    # Separate target
+    y = df[target_column]
+    
+    # Identify numeric columns (excluding the target)
+    numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
+    if target_column in numeric_cols:
+        numeric_cols.remove(target_column)
+    
+    # Scale numeric features
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(df[numeric_cols])
+
+    # Rebuild DataFrame
+    scaled_df = df.copy()
+    scaled_df[numeric_cols] = X_scaled
+    scaled_df[target_column] = y
+
+    return scaled_df
 
 # def encode_categorical_variables(df, verbose=True):
 #     # Set display options

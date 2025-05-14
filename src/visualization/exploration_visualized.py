@@ -1,9 +1,29 @@
 import plotly.express as px
 import pandas as pd
 from scipy.stats import skew
+import numpy as np
+import plotly.express as px
+import pandas as pd
 
 def plot_missing_data(missing_data: pd.DataFrame):
+    """
+    Plots a bar chart of missing data percentages using Plotly.
+    If no missing data is found, prints a message instead.
+
+    Parameters:
+    -----------
+    missing_data : pd.DataFrame
+        A DataFrame with 'Missing Values' and 'Percentage (%)' columns,
+        indexed by column names.
     
+    Returns:
+    --------
+    Plotly figure or None
+    """
+    if missing_data['Missing Values'].sum() == 0:
+        print("❌ No missing data found in the dataset.")
+        return None
+
     fig = px.bar(
         missing_data,
         x=missing_data.index,
@@ -17,7 +37,9 @@ def plot_missing_data(missing_data: pd.DataFrame):
 
     fig.update_traces(texttemplate='%{text}', textposition='outside')
     fig.update_layout(xaxis_tickangle=-45, yaxis_range=[0, 100])
+    fig.show()
     return fig
+
 
 
 
