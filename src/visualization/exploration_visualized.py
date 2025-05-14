@@ -1,5 +1,6 @@
 import plotly.express as px
 import pandas as pd
+from scipy.stats import skew
 
 def plot_missing_data(missing_data: pd.DataFrame):
     
@@ -19,6 +20,63 @@ def plot_missing_data(missing_data: pd.DataFrame):
     return fig
 
 
+
+def plot_outliers_all(df, threshold=1.5):
+   
+    numeric_cols = df.select_dtypes(include=[np.number]).columns
+    found_outliers = False
+
+    for col in numeric_cols:
+        Q1 = df[col].quantile(0.25)
+        Q3 = df[col].quantile(0.75)
+        IQR = Q3 - Q1
+        lower_bound = Q1 - threshold * IQR
+        upper_bound = Q3 + threshold * IQR
+
+        outlier_mask = (df[col] < lower_bound) | (df[col] > upper_bound)
+        if outlier_mask.any():
+            found_outliers = True
+            df_temp = df.copy()
+            df_temp['Outlier'] = outlier_mask
+
+            fig = px.scatter(df_temp, x=df_temp.index, y=col, color='Outlier',
+                             title=f"Outlier Detection in '{col}' using IQR",
+                             labels={'x': 'Index', col: col},
+                             color_discrete_map={False: 'blue', True: 'red'})
+            fig.update_traces(marker=dict(size=8))
+            fig.show()
+
+    if not found_outliers:
+        print("❌ No outliers found in any numeric column.")
+
+
+
+
+def plot_distribution_analysis(df):
+
+    numeric_cols = df.select_dtypes(include=[np.number]).columns
+
+    if len(numeric_cols) == 0:
+        print("⚠️ No numeric columns found in the dataset.")
+        return
+
+    for col in numeric_cols:
+        data = df[col].dropna()
+        skewness = skew(data)
+
+        # Interpret skewness
+        if abs(skewness) < 0.5:
+            skew_type = "Approximately Normal"
+        elif skewness > 0:
+            skew_type = "Right-Skewed (Positive)"
+        else:
+            skew_type = "Left-Skewed (Negative)"
+
+        # Plot
+        fig = px.histogram(data, x=col, nbins=40, marginal="rug", opacity=0.75,
+                           title=f"Distribution of '{col}' | Skewness: {skewness:.2f} → {skew_type}")
+        fig.update_layout(bargap=0.1)
+        fig.show()
 
 
 def plot_categorical_by_target(df, categorical_cols, target_col='Test Results'):
