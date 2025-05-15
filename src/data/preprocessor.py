@@ -1,25 +1,29 @@
 import pandas as pd
-
 from sklearn.preprocessing import StandardScaler
-
 from scipy import stats
 import numpy as np
+import pandas as pd
+
 
 def analyze_missing_values(df):
-    missing_counts = df.isnull().sum()
-    missing_percentage = (missing_counts / len(df)) * 100
-    missing_data = pd.DataFrame({
-        'Missing Values': missing_counts[missing_counts > 0],
-        'Percentage (%)': missing_percentage[missing_counts > 0].round(2)
+    # Work only on the original columns to avoid derived columns like 'month'
+    original_columns = df.columns.tolist()
+    
+    # Calculate missing values and percentages
+    missing_data = df[original_columns].isnull().sum()
+    total_rows = df.shape[0]
+    missing_summary = pd.DataFrame({
+        'Missing Values': missing_data,
+        'Missing Percentage (%)': (missing_data / total_rows) * 100
     })
     
-    if missing_data.empty:
-        print("❌ No missing values found in the dataset.")
-    else:
-        print("Missing Values Analysis:")
-        print(missing_data)
+    # Filter only columns with missing values
+    missing_summary = missing_summary[missing_summary['Missing Values'] > 0]
     
-    return missing_data
+    # Sort by highest percentage of missing values
+    return missing_summary.sort_values(by='Missing Percentage (%)', ascending=False)
+
+
 
 
 def detect_outliers(df, columns=None, method='iqr', threshold=1.5, z_thresh=3.0, return_summary=False):
@@ -127,104 +131,103 @@ def encode_students_dataset(df: pd.DataFrame, max_unique_threshold=50) -> pd.Dat
 
 
 
-def scale_features(df: pd.DataFrame, target_column: str = 'Test Results') -> pd.DataFrame:
-    """
-    Scales only numeric features using StandardScaler, excluding the target and non-numeric columns.
 
-    Parameters:
-    -----------
-    df : pd.DataFrame
-        DataFrame with numeric and non-numeric features
-    target_column : str
-        Name of the target column (excluded from scaling)
 
-    Returns:
-    --------
-    pd.DataFrame
-        Scaled DataFrame with target intact, and non-numeric columns untouched
-    """
+
+
+#===========Preprocessing Functions====================
+
+def handle_missing_values(df):
+  
+    filled_info = []
+
+    for col in df.columns:
+        if df[col].isnull().any():
+            if df[col].dtype in ['float64', 'int64']:
+                median_val = df[col].median()
+                df[col] = df[col].fillna(median_val)
+                filled_info.append(f"Filled numerical column '{col}' with median: {median_val}")
+            else:
+                mode_val = df[col].mode().dropna()
+                if not mode_val.empty:
+                    mode_val = mode_val[0]
+                    df[col] = df[col].fillna(mode_val)
+
+                    filled_info.append(f"Filled categorical column '{col}' with mode: {mode_val}")
+                else:
+                    filled_info.append(f"Could not fill column '{col}' — no valid mode found.")
+
+    # Print summary
+    if filled_info:
+        print("✅Missing values handled:\n" + "\n".join(filled_info))
+    else:
+        print("❌No missing values found.")
+
+    return df
+
+
+
+def handle_date_features(df):
     df = df.copy()
+    date_like_columns = []
 
-    # Separate target
-    y = df[target_column]
-    
-    # Identify numeric columns (excluding the target)
-    numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
-    if target_column in numeric_cols:
-        numeric_cols.remove(target_column)
-    
-    # Scale numeric features
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(df[numeric_cols])
+    for col in df.columns:
+        if df[col].dtype == 'object':
+            try:
+                # Try parsing with known consistent format first
+                converted = pd.to_datetime(df[col], format="%d/%m/%Y", errors='raise')
+                df[col] = pd.to_datetime(df[col], format="%d/%m/%Y", errors='coerce')
+                date_like_columns.append(col)
+              
+            except Exception:
+                continue  # Not a consistently date-formatted column
 
-    # Rebuild DataFrame
-    scaled_df = df.copy()
-    scaled_df[numeric_cols] = X_scaled
-    scaled_df[target_column] = y
+    if not date_like_columns:
+        print("ℹ️ No date-like columns were found and converted.")
+    else:
+        print(f"\n📅 Detected and converted date columns: {date_like_columns}")
+    
+    print("\n📄 Preview of dataset after date conversion:")
+    return df
 
-    return scaled_df
 
-# def encode_categorical_variables(df, verbose=True):
-#     # Set display options
-#     pd.set_option('display.max_columns', None)
-#     pd.set_option('display.width', 1000)
-    
-#     # Initial report
-#     if verbose:
-#         print("="*80)
-#         print("CATEGORICAL VARIABLE ENCODING VERIFICATION REPORT".center(80))
-#         print("="*80)
-#         print(f"\nOriginal DataFrame Shape: {df.shape}")
-#         print("\nCategorical Columns to encode:")
-#         print([col for col in df.columns if df[col].dtype == 'object'])
-        
-#     # -----------------------------------------------------------------
-#     # 1. Admission Type (ordinal encoding)
-#     # -----------------------------------------------------------------
-#     admission_order = ['Elective', 'Urgent', 'Emergency']
-#     df['Admission Type'] = df['Admission Type'].map({val:i for i,val in enumerate(admission_order)})
-    
-#     if verbose:
-#         print("\n" + "="*80)
-#         print("ADMISSION TYPE ENCODING VERIFICATION".center(80))
-#         print("="*80)
-#         print("\nMapping Applied:")
-#         print(pd.DataFrame({'Category': admission_order, 'Encoded Value': range(3)}))
-#         print("\nValue Distribution After Encoding:")
-#         print(df['Admission Type'].value_counts().sort_index())
-    
-#     # -----------------------------------------------------------------
-#     # 2. One-Hot Encoding
-#     # -----------------------------------------------------------------
-#     nominal_cols = ['Gender', 'Blood Type', 'Medical Condition', 
-#                    'Insurance Provider', 'Medication']
-    
-#     df_encoded = pd.get_dummies(df, columns=nominal_cols, drop_first=True)
-    
-#     if verbose:
-#         print("\n" + "="*80)
-#         print("ONE-HOT ENCODING VERIFICATION".center(80))
-#         print("="*80)
-#         print(f"\nNew Shape: {df_encoded.shape}")
-#         print("\nDummy Columns Created:")
-#         dummy_report = []
-#         for col in nominal_cols:
-#             n_dummies = sum(1 for c in df_encoded.columns if c.startswith(col+'_'))
-#             dummy_report.append([col, df[col].nunique(), n_dummies])
-#         print(pd.DataFrame(dummy_report, 
-#                          columns=['Feature', 'Original Categories', 'Dummy Columns']))
-    
-#     # -----------------------------------------------------------------
-#     # 3. Target Encoding Verification
-#     # -----------------------------------------------------------------
-#     if 'Test Results' in df_encoded.columns:
-#         if verbose:
-#             print("\n" + "="*80)
-#             print("TARGET VARIABLE DISTRIBUTION".center(80))
-#             print("="*80)
-#             print("\nTest Results Value Counts:")
-#             print(df_encoded['Test Results'].value_counts())
-#             print("\nClass Balance:")
-#             print((df_encoded['Test Results'].value_counts(normalize=True)*100).round(1))
-    
-#     return df_encoded
+from sklearn.preprocessing import LabelEncoder
+
+def encode_features(df):
+  
+
+    # Drop irrelevant columns
+    drop_cols = ['ID', 'Name', 'Room Number']
+    df.drop(columns=[col for col in drop_cols if col in df.columns], inplace=True)
+
+    # Label Encoding for binary categorical
+    if 'Gender' in df.columns:
+        df['Gender'] = df['Gender'].map({'Male': 0, 'Female': 1})
+        print("✅ Label encoded 'Gender'.")
+
+    # One-Hot Encoding for low-cardinality categorical features
+    one_hot_cols = ['Blood Type', 'Medical Condition', 'Insurance Provider', 'Admission Type', 'Medication']
+    for col in one_hot_cols:
+        if col in df.columns:
+            df = pd.get_dummies(df, columns=[col], prefix=col.replace(" ", "_"))
+            print(f"✅ One-hot encoded '{col}'.")
+
+    # Frequency Encoding for high-cardinality features
+    freq_encode_cols = ['Doctor', 'Hospital']
+    for col in freq_encode_cols:
+        if col in df.columns:
+            freq_map = df[col].value_counts().to_dict()
+            df[col] = df[col].map(freq_map)
+            print(f"✅ Frequency encoded '{col}'.")
+
+    # Label Encode the target
+    if 'Test Results' in df.columns:
+        le = LabelEncoder()
+        df['Test Results'] = le.fit_transform(df['Test Results'])
+        print(f"🎯 Label encoded target column 'Test Results'.")
+
+    print("\n📄 Preview of encoded dataset:")
+    return df.head()
+
+
+

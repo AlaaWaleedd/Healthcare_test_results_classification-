@@ -5,40 +5,38 @@ import numpy as np
 import plotly.express as px
 import pandas as pd
 
-def plot_missing_data(missing_data: pd.DataFrame):
-    """
-    Plots a bar chart of missing data percentages using Plotly.
-    If no missing data is found, prints a message instead.
+import plotly.express as px
 
-    Parameters:
-    -----------
-    missing_data : pd.DataFrame
-        A DataFrame with 'Missing Values' and 'Percentage (%)' columns,
-        indexed by column names.
+# Define the function to analyze and plot missing values
+def analyze_and_plot_missing_values(df):
+    missing_data = df.isnull().sum()
+    total_rows = df.shape[0]
+    missing_summary = pd.DataFrame({
+        'Column': missing_data.index,
+        'Missing Values': missing_data.values,
+        'Missing Percentage (%)': (missing_data / total_rows) * 100
+    })
+    # Filter columns with missing values only
+    missing_summary = missing_summary[missing_summary['Missing Values'] > 0]
+    missing_summary = missing_summary.sort_values(by='Missing Percentage (%)', ascending=False)
     
-    Returns:
-    --------
-    Plotly figure or None
-    """
-    if missing_data['Missing Values'].sum() == 0:
-        print("❌ No missing data found in the dataset.")
-        return None
-
+    # Plot
     fig = px.bar(
-        missing_data,
-        x=missing_data.index,
-        y='Percentage (%)',
-        text='Missing Values',
-        title='Missing Data Percentage by Feature',
-        labels={'x': 'Feature', 'Percentage (%)': 'Missing Percentage (%)'},
-        color='Percentage (%)',
-        color_continuous_scale='Reds'
+        missing_summary,
+        x='Column',
+        y='Missing Percentage (%)',
+        title='Missing Data Percentage by Column',
+        text='Missing Percentage (%)',
+        labels={'Missing Percentage (%)': '% Missing'},
+        color='Missing Percentage (%)',
+        color_continuous_scale='OrRd'
     )
-
-    fig.update_traces(texttemplate='%{text}', textposition='outside')
-    fig.update_layout(xaxis_tickangle=-45, yaxis_range=[0, 100])
-    fig.show()
+    fig.update_traces(texttemplate='%{text:.2f}%', textposition='outside')
+    fig.update_layout(yaxis_range=[0, 100], xaxis_title='Column Name', yaxis_title='% of Missing Data')
     return fig
+
+
+
 
 
 
