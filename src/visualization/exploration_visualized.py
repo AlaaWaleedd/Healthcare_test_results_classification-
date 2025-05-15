@@ -2,10 +2,7 @@ import plotly.express as px
 import pandas as pd
 from scipy.stats import skew
 import numpy as np
-import plotly.express as px
-import pandas as pd
 
-import plotly.express as px
 
 # Define the function to analyze and plot missing values
 def analyze_and_plot_missing_values(df):
@@ -34,11 +31,6 @@ def analyze_and_plot_missing_values(df):
     fig.update_traces(texttemplate='%{text:.2f}%', textposition='outside')
     fig.update_layout(yaxis_range=[0, 100], xaxis_title='Column Name', yaxis_title='% of Missing Data')
     return fig
-
-
-
-
-
 
 
 def plot_outliers_all(df, threshold=1.5):
@@ -201,3 +193,4 @@ def plot_correlation_matrix(df, features):
   
 
     return fig
+

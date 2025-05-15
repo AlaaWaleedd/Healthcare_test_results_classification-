@@ -2,8 +2,10 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from scipy import stats
 import numpy as np
+import os
 import pandas as pd
 
+#===========Exploration Functions=================
 
 def analyze_missing_values(df):
     # Work only on the original columns to avoid derived columns like 'month'
@@ -100,34 +102,6 @@ def compute_descriptive_statistics(df):
     return df.describe(include='all')
 
 
-def encode_students_dataset(df: pd.DataFrame, max_unique_threshold=50) -> pd.DataFrame:
-    df = df.copy()
-
-    # Label encode binary column: Gender
-    if 'Gender' in df.columns:
-        df['Gender'] = df['Gender'].map({'Male': 0, 'Female': 1})
-
-    # Label encode target: Test Results
-    if 'Test Results' in df.columns:
-        df['Test Results'] = df['Test Results'].map({
-            'Normal': 0, 'Abnormal': 1, 'Inconclusive': 2
-        })
-
-    # Detect object (categorical) columns, excluding already handled and ID-like fields
-    categorical_cols = df.select_dtypes(include='object').columns.tolist()
-    categorical_cols = [col for col in categorical_cols if col not in ['Test Results']]
-
-    # Separate columns with reasonable cardinality
-    low_cardinality_cols = [col for col in categorical_cols if df[col].nunique() <= max_unique_threshold]
-    high_cardinality_cols = [col for col in categorical_cols if df[col].nunique() > max_unique_threshold]
-
-    if high_cardinality_cols:
-        print("⚠️ Skipping high-cardinality columns from encoding:", high_cardinality_cols)
-
-    # One-hot encode safe columns
-    df = pd.get_dummies(df, columns=low_cardinality_cols, drop_first=True)
-
-    return df
 
 
 
@@ -191,43 +165,82 @@ def handle_date_features(df):
     return df
 
 
-from sklearn.preprocessing import LabelEncoder
 
-def encode_features(df):
-  
+
+def encoding_features(df: pd.DataFrame, max_unique_threshold=50) -> pd.DataFrame:
+    df = df.copy()
 
     # Drop irrelevant columns
     drop_cols = ['ID', 'Name', 'Room Number']
     df.drop(columns=[col for col in drop_cols if col in df.columns], inplace=True)
 
-    # Label Encoding for binary categorical
+    # Label encode binary categorical column: Gender
     if 'Gender' in df.columns:
         df['Gender'] = df['Gender'].map({'Male': 0, 'Female': 1})
         print("✅ Label encoded 'Gender'.")
 
-    # One-Hot Encoding for low-cardinality categorical features
-    one_hot_cols = ['Blood Type', 'Medical Condition', 'Insurance Provider', 'Admission Type', 'Medication']
-    for col in one_hot_cols:
-        if col in df.columns:
-            df = pd.get_dummies(df, columns=[col], prefix=col.replace(" ", "_"))
+    # Label encode target: Test Results
+    if 'Test Results' in df.columns:
+        df['Test Results'] = df['Test Results'].map({
+            'Normal': 0, 'Abnormal': 1, 'Inconclusive': 2
+        })
+        print("🎯 Label encoded target column 'Test Results'.")
+
+    # Detect remaining categorical columns
+    categorical_cols = df.select_dtypes(include='object').columns.tolist()
+    categorical_cols = [col for col in categorical_cols if col not in ['Test Results']]
+
+    # Separate based on cardinality
+    low_cardinality_cols = [col for col in categorical_cols if df[col].nunique() <= max_unique_threshold]
+    high_cardinality_cols = [col for col in categorical_cols if df[col].nunique() > max_unique_threshold]
+
+    # One-hot encode low-cardinality columns
+    if low_cardinality_cols:
+        df = pd.get_dummies(df, columns=low_cardinality_cols, drop_first=True)
+        for col in low_cardinality_cols:
             print(f"✅ One-hot encoded '{col}'.")
 
-    # Frequency Encoding for high-cardinality features
-    freq_encode_cols = ['Doctor', 'Hospital']
-    for col in freq_encode_cols:
-        if col in df.columns:
-            freq_map = df[col].value_counts().to_dict()
-            df[col] = df[col].map(freq_map)
-            print(f"✅ Frequency encoded '{col}'.")
+    # Frequency encode high-cardinality columns
+    for col in high_cardinality_cols:
+        freq_map = df[col].value_counts()
+        df[col] = df[col].map(freq_map)
+        print(f"✅ Frequency encoded '{col}'.")
 
-    # Label Encode the target
-    if 'Test Results' in df.columns:
-        le = LabelEncoder()
-        df['Test Results'] = le.fit_transform(df['Test Results'])
-        print(f"🎯 Label encoded target column 'Test Results'.")
-
+  
+    print(f"\n📐 Encoded shape: {df.shape}")
     print("\n📄 Preview of encoded dataset:")
-    return df.head()
+
+    return df
 
 
+def scale_numerical_features(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+
+    # Define known numerical features
+    numeric_cols = ['Age', 'Billing Amount']
+
+    scaler = StandardScaler()
+    df[numeric_cols] = scaler.fit_transform(df[numeric_cols])
+
+    print(f"✅ Scaled numerical columns: {numeric_cols}")
+    
+    print(f"\n📐 Scaled shape: {df.shape}")
+    print(f"\n📄 Preview of scaled dataset:")
+
+    return df
+
+
+def save_processed_df(df, filename, output_dir="data/processed"):
+
+    # Ensure the output directory exists
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Construct the full file path and save
+    filepath = os.path.join(output_dir, filename)
+    df.to_csv(filepath, index=False)
+
+    # Get the absolute path (Windows-style)
+    abs_path = os.path.abspath(filepath)
+
+    print(f"✅ Saved processed DataFrame to:\n{abs_path}")
 
