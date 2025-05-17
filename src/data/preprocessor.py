@@ -161,7 +161,7 @@ def handle_date_features(df):
     else:
         print(f"\n📅 Detected and converted date columns: {date_like_columns}")
     
-    print("\n📄 Preview of dataset after date conversion:")
+    # print("\n📄 Preview of dataset after date conversion:")
     return df
 
 
@@ -208,7 +208,7 @@ def encoding_features(df: pd.DataFrame, max_unique_threshold=50) -> pd.DataFrame
 
   
     print(f"\n📐 Encoded shape: {df.shape}")
-    print("\n📄 Preview of encoded dataset:")
+    # print("\n📄 Preview of encoded dataset:")
 
     return df
 
@@ -225,7 +225,7 @@ def scale_numerical_features(df: pd.DataFrame) -> pd.DataFrame:
     print(f"✅ Scaled numerical columns: {numeric_cols}")
     
     print(f"\n📐 Scaled shape: {df.shape}")
-    print(f"\n📄 Preview of scaled dataset:")
+    # print(f"\n📄 Preview of scaled dataset:")
 
     return df
 
