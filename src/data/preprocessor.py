@@ -4,6 +4,7 @@ from scipy import stats
 import numpy as np
 import os
 import pandas as pd
+from sklearn.preprocessing import OneHotEncoder
 
 #===========Exploration Functions=================
 
@@ -101,7 +102,20 @@ def get_monthly_test_result_counts(df, date_col='Date of Admission', target_col=
 def compute_descriptive_statistics(df):
     return df.describe(include='all')
 
+def encode_students_dataset(df):
+    # Encode categorical columns using one-hot encoding
+    categorical_cols = df.select_dtypes(include='object').columns
+    df = pd.get_dummies(df, columns=categorical_cols, drop_first=True)
+    return df
 
+def encoding_features(df):
+    # You can customize this if needed
+    return encode_students_dataset(df)
+
+def save_processed_df(df, filename, output_dir="data/processed"):
+    import os
+    os.makedirs(output_dir, exist_ok=True)
+    df.to_csv(os.path.join(output_dir, filename), index=False)
 
 
 
