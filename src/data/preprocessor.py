@@ -119,7 +119,17 @@ def save_processed_df(df, filename, output_dir="data/processed"):
 
 
 
+def get_original_features(df, label_column=None):
+ 
+    feature_names = df.columns.drop(label_column) if label_column else df.columns
+    print("\nOriginal Features:")
+    print(pd.DataFrame({'Feature Name': feature_names}).to_string(index=False))
 
+
+def get_selected_features(df_selected):
+ 
+    print("\nSelected Features:")
+    print(pd.DataFrame({'Feature Name': df_selected.columns}).to_string(index=False))
 
 
 
