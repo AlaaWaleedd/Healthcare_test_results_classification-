@@ -8,6 +8,21 @@ from sklearn.preprocessing import OneHotEncoder
 
 #===========Exploration Functions=================
 
+def check_negative_values(df: pd.DataFrame):
+    print("🔎 Checking for negative values in numerical columns...\n")
+    numeric_cols = df.select_dtypes(include=['number']).columns
+
+    has_negatives = False
+    for col in numeric_cols:
+        negative_count = (df[col] < 0).sum()
+        if negative_count > 0:
+            has_negatives = True
+            print(f"❌ Column '{col}' has {negative_count} negative value(s).")
+    
+    if not has_negatives:
+        print("✅ No negative values found in any numerical column.")
+        
+
 def analyze_missing_values(df):
     # Work only on the original columns to avoid derived columns like 'month'
     original_columns = df.columns.tolist()
@@ -135,136 +150,136 @@ def get_selected_features(df_selected):
 
 #===========Preprocessing Functions====================
 
-def handle_missing_values(df):
+# def handle_missing_values(df):
   
-    filled_info = []
+#     filled_info = []
 
-    for col in df.columns:
-        if df[col].isnull().any():
-            if df[col].dtype in ['float64', 'int64']:
-                median_val = df[col].median()
-                df[col] = df[col].fillna(median_val)
-                filled_info.append(f"Filled numerical column '{col}' with median: {median_val}")
-            else:
-                mode_val = df[col].mode().dropna()
-                if not mode_val.empty:
-                    mode_val = mode_val[0]
-                    df[col] = df[col].fillna(mode_val)
+#     for col in df.columns:
+#         if df[col].isnull().any():
+#             if df[col].dtype in ['float64', 'int64']:
+#                 median_val = df[col].median()
+#                 df[col] = df[col].fillna(median_val)
+#                 filled_info.append(f"Filled numerical column '{col}' with median: {median_val}")
+#             else:
+#                 mode_val = df[col].mode().dropna()
+#                 if not mode_val.empty:
+#                     mode_val = mode_val[0]
+#                     df[col] = df[col].fillna(mode_val)
 
-                    filled_info.append(f"Filled categorical column '{col}' with mode: {mode_val}")
-                else:
-                    filled_info.append(f"Could not fill column '{col}' — no valid mode found.")
+#                     filled_info.append(f"Filled categorical column '{col}' with mode: {mode_val}")
+#                 else:
+#                     filled_info.append(f"Could not fill column '{col}' — no valid mode found.")
 
-    # Print summary
-    if filled_info:
-        print("✅Missing values handled:\n" + "\n".join(filled_info))
-    else:
-        print("❌No missing values found.")
+#     # Print summary
+#     if filled_info:
+#         print("✅Missing values handled:\n" + "\n".join(filled_info))
+#     else:
+#         print("❌No missing values found.")
 
-    return df
+#     return df
 
 
 
-def handle_date_features(df):
-    df = df.copy()
-    date_like_columns = []
+# def handle_date_features(df):
+#     df = df.copy()
+#     date_like_columns = []
 
-    for col in df.columns:
-        if df[col].dtype == 'object':
-            try:
-                # Try parsing with known consistent format first
-                converted = pd.to_datetime(df[col], format="%d/%m/%Y", errors='raise')
-                df[col] = pd.to_datetime(df[col], format="%d/%m/%Y", errors='coerce')
-                date_like_columns.append(col)
+#     for col in df.columns:
+#         if df[col].dtype == 'object':
+#             try:
+#                 # Try parsing with known consistent format first
+#                 converted = pd.to_datetime(df[col], format="%d/%m/%Y", errors='raise')
+#                 df[col] = pd.to_datetime(df[col], format="%d/%m/%Y", errors='coerce')
+#                 date_like_columns.append(col)
               
-            except Exception:
-                continue  # Not a consistently date-formatted column
+#             except Exception:
+#                 continue  # Not a consistently date-formatted column
 
-    if not date_like_columns:
-        print("ℹ️ No date-like columns were found and converted.")
-    else:
-        print(f"\n📅 Detected and converted date columns: {date_like_columns}")
+#     if not date_like_columns:
+#         print("ℹ️ No date-like columns were found and converted.")
+#     else:
+#         print(f"\n📅 Detected and converted date columns: {date_like_columns}")
     
-    # print("\n📄 Preview of dataset after date conversion:")
-    return df
+#     # print("\n📄 Preview of dataset after date conversion:")
+#     return df
 
 
 
 
-def encoding_features(df: pd.DataFrame, max_unique_threshold=50) -> pd.DataFrame:
-    df = df.copy()
+# def encoding_features(df: pd.DataFrame, max_unique_threshold=50) -> pd.DataFrame:
+#     df = df.copy()
 
-    # Drop irrelevant columns
-    drop_cols = ['ID', 'Name', 'Room Number']
-    df.drop(columns=[col for col in drop_cols if col in df.columns], inplace=True)
+#     # Drop irrelevant columns
+#     drop_cols = ['ID', 'Name', 'Room Number']
+#     df.drop(columns=[col for col in drop_cols if col in df.columns], inplace=True)
 
-    # Label encode binary categorical column: Gender
-    if 'Gender' in df.columns:
-        df['Gender'] = df['Gender'].map({'Male': 0, 'Female': 1})
-        print("✅ Label encoded 'Gender'.")
+#     # Label encode binary categorical column: Gender
+#     if 'Gender' in df.columns:
+#         df['Gender'] = df['Gender'].map({'Male': 0, 'Female': 1})
+#         print("✅ Label encoded 'Gender'.")
 
-    # Label encode target: Test Results
-    if 'Test Results' in df.columns:
-        df['Test Results'] = df['Test Results'].map({
-            'Normal': 0, 'Abnormal': 1, 'Inconclusive': 2
-        })
-        print("🎯 Label encoded target column 'Test Results'.")
+#     # Label encode target: Test Results
+#     if 'Test Results' in df.columns:
+#         df['Test Results'] = df['Test Results'].map({
+#             'Normal': 0, 'Abnormal': 1, 'Inconclusive': 2
+#         })
+#         print("🎯 Label encoded target column 'Test Results'.")
 
-    # Detect remaining categorical columns
-    categorical_cols = df.select_dtypes(include='object').columns.tolist()
-    categorical_cols = [col for col in categorical_cols if col not in ['Test Results']]
+#     # Detect remaining categorical columns
+#     categorical_cols = df.select_dtypes(include='object').columns.tolist()
+#     categorical_cols = [col for col in categorical_cols if col not in ['Test Results']]
 
-    # Separate based on cardinality
-    low_cardinality_cols = [col for col in categorical_cols if df[col].nunique() <= max_unique_threshold]
-    high_cardinality_cols = [col for col in categorical_cols if df[col].nunique() > max_unique_threshold]
+#     # Separate based on cardinality
+#     low_cardinality_cols = [col for col in categorical_cols if df[col].nunique() <= max_unique_threshold]
+#     high_cardinality_cols = [col for col in categorical_cols if df[col].nunique() > max_unique_threshold]
 
-    # One-hot encode low-cardinality columns
-    if low_cardinality_cols:
-        df = pd.get_dummies(df, columns=low_cardinality_cols, drop_first=True)
-        for col in low_cardinality_cols:
-            print(f"✅ One-hot encoded '{col}'.")
+#     # One-hot encode low-cardinality columns
+#     if low_cardinality_cols:
+#         df = pd.get_dummies(df, columns=low_cardinality_cols, drop_first=True)
+#         for col in low_cardinality_cols:
+#             print(f"✅ One-hot encoded '{col}'.")
 
-    # Frequency encode high-cardinality columns
-    for col in high_cardinality_cols:
-        freq_map = df[col].value_counts()
-        df[col] = df[col].map(freq_map)
-        print(f"✅ Frequency encoded '{col}'.")
+#     # Frequency encode high-cardinality columns
+#     for col in high_cardinality_cols:
+#         freq_map = df[col].value_counts()
+#         df[col] = df[col].map(freq_map)
+#         print(f"✅ Frequency encoded '{col}'.")
 
   
-    print(f"\n📐 Encoded shape: {df.shape}")
-    # print("\n📄 Preview of encoded dataset:")
+#     print(f"\n📐 Encoded shape: {df.shape}")
+#     # print("\n📄 Preview of encoded dataset:")
 
-    return df
+#     return df
 
 
-def scale_numerical_features(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
+# def scale_numerical_features(df: pd.DataFrame) -> pd.DataFrame:
+#     df = df.copy()
 
-    # Define known numerical features
-    numeric_cols = ['Age', 'Billing Amount']
+#     # Define known numerical features
+#     numeric_cols = ['Age', 'Billing Amount']
 
-    scaler = StandardScaler()
-    df[numeric_cols] = scaler.fit_transform(df[numeric_cols])
+#     scaler = StandardScaler()
+#     df[numeric_cols] = scaler.fit_transform(df[numeric_cols])
 
-    print(f"✅ Scaled numerical columns: {numeric_cols}")
+#     print(f"✅ Scaled numerical columns: {numeric_cols}")
     
-    print(f"\n📐 Scaled shape: {df.shape}")
-    # print(f"\n📄 Preview of scaled dataset:")
+#     print(f"\n📐 Scaled shape: {df.shape}")
+#     # print(f"\n📄 Preview of scaled dataset:")
 
-    return df
+#     return df
 
 
-def save_processed_df(df, filename, output_dir="data/processed"):
+# def save_processed_df(df, filename, output_dir="data/processed"):
 
-    # Ensure the output directory exists
-    os.makedirs(output_dir, exist_ok=True)
+#     # Ensure the output directory exists
+#     os.makedirs(output_dir, exist_ok=True)
 
-    # Construct the full file path and save
-    filepath = os.path.join(output_dir, filename)
-    df.to_csv(filepath, index=False)
+#     # Construct the full file path and save
+#     filepath = os.path.join(output_dir, filename)
+#     df.to_csv(filepath, index=False)
 
-    # Get the absolute path (Windows-style)
-    abs_path = os.path.abspath(filepath)
+#     # Get the absolute path (Windows-style)
+#     abs_path = os.path.abspath(filepath)
 
-    print(f"✅ Saved processed DataFrame to:\n{abs_path}")
+#     print(f"✅ Saved processed DataFrame to:\n{abs_path}")
 
