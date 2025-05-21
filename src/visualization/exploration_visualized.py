@@ -360,15 +360,17 @@ def plot_correlation_matrix(df, features):
     plt.show()
 
 
+
+
 def plot_duplicates(df):
-    # Count duplicated rows (excluding the first occurrence)
-    duplicated_rows = df.duplicated(keep='first').sum()
+    # Count duplicated rows (excluding first occurrence)
+    duplicated_rows_count = df.duplicated(keep='first').sum()
+    # Print summary
+    print(f"Duplicated rows: {duplicated_rows_count}\n")
     
-    # Count duplicated values per column (count values appearing more than once)
-    duplicate_counts = {}
-    for col in df.columns:
-        counts = df[col].value_counts()
-        duplicate_counts[col] = counts[counts > 1].sum()  # sum of duplicated values count
+
+    return duplicated_rows_count
+
     
   
 
